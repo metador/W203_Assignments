@@ -10,19 +10,15 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
+getwd()
+library(car)
 library(ggplot2)
 library(dplyr)
 load("ceo_w203.RData")
+summary(CEO)
 ```
 
 
-We see that there are some negative market value data points. These data points also have the profits as -1. 
-This could potentially instances of missing data points and default value of -1 is recorded. So we will be considering them as na.
-
-```{r}
-CEO$mktval = ifelse(CEO$mktval == -1, NA, CEO$mktval)
-
-```
 
 
 The market value has continous variable.
@@ -34,13 +30,20 @@ When we see the boxplot it is clear that there are a many values which are above
 ```{r}
 
 summary(CEO$mktval)
-ggplot(CEO,aes(mktval))+ geom_histogram(binwidth = 1000,fill ="red",col="black")
-
+ggplot(CEO,aes(mktval,color = as.factor(grad)))+ geom_histogram(binwidth = 1000,fill ="red",col="black")
 
 ggplot(CEO,aes(y=mktval,x=1))+ geom_boxplot()
 ```
 
 
+
+We see that there are some negative market value data points. These data points also have the profits as -1. 
+This could potentially instances of missing data points and default value of -1 is recorded. So we will be considering them as na.
+
+```{r}
+CEO[CEO$mktval==-1,]
+
+```
 
 We can see a high correlation between market value and profits, which is expected for most companies.
 Similary we see a good correlation between market value and salary.
@@ -50,11 +53,8 @@ On ploting the salary and profits against mktval, we see there are few data poin
 ```{r}
 cor(CEO$mktval,CEO, use="complete.obs")
 
-ggplot(CEO, aes(x = log(mktval), y = log(profits), color = as.factor(1))) +geom_point() + stat_smooth(method = "lm",se=F)
-cor(log(CEO$mktval),log(CEO$profits),use = "complete.obs")
-ggplot(CEO, aes(x = mktval, y = salary, color = as.factor(1))) +geom_point() + stat_smooth(method = "lm", se =F)
-ggplot(CEO, aes(x = log(mktval), y = salary, color = as.factor(1))) +geom_point() + stat_smooth(method = "lm", se =F)
-cor(log(CEO$mktval),CEO$salary,use = "complete.obs")
+ggplot(CEO, aes(x = mktval, y = profits, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
+ggplot(CEO, aes(x = mktval, y = salary, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
 
 ```
 
@@ -75,7 +75,7 @@ If we simply plot a graph of age vs salary do not get any particular co-relation
 We do see that if you have a grad degree you are likely to get paid more as you in advance your career.
 
 ```{r}
-ggplot(CEO,aes(x=age,y=salary,color = as.factor(grad)))+ geom_point()+ stat_smooth(method = "lm", se =F)
+ggplot(CEO,aes(x=age,y=salary,color = as.factor(grad)))+ geom_point()+ stat_smooth(method = "lm")
 cor(CEO$age,CEO$salary)
 ```
 
@@ -87,15 +87,10 @@ We see that within the age range 29 to 75 there might be a corelation between av
 This is also the range which has the maxium data points
 
 ```{r}
-salary_means= by(CEO$salary,CEO$age,mean)
-plot(sort(unique(CEO$age)), salary_means)
-abline(lm(salary_means~sort(unique(CEO$age))),col="red")
-cor(salary_means,sort(unique(CEO$age)))
-
 
 grouped = group_by(CEO, age)
 mean_salary_age = summarise(grouped, mean_salary = mean(salary, na.rm = T))
-ggplot(mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm", se =F)
+ggplot(mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm")
 cor(mean_salary_age)
 
 ```
@@ -106,7 +101,7 @@ We see a high co-relation between mean salary and the age within the age range 2
 ```{r}
 
 narrowed_mean_salary_age=mean_salary_age[mean_salary_age$age<=75 & mean_salary_age$age>=29,]
-ggplot(narrowed_mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm", se =F)
+ggplot(narrowed_mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm")
 cor(narrowed_mean_salary_age$age,narrowed_mean_salary_age$mean_salary)
 
 

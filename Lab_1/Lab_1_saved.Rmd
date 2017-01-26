@@ -1,0 +1,168 @@
+---
+title: "Lab1"
+author: "Melwin Poovakottu"
+date: "Friday, January 20, 2017"
+output: pdf_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+getwd()
+library(car)
+library(ggplot2)
+load("ceo_w203.RData")
+summary(CEO)
+```
+
+```{r, echo=TRUE}
+summary(log(CEO$profits))
+plot(CEO$salary)
+hist(CEO$salary, breaks = -10:140 *50)
+boxplot(CEO$salary)
+axis(2,50)
+?hist
+```
+
+
+```{r}
+
+
+sub = CEO$salary<=3000 & CEO$profits<=1000 & CEO$profits>00
+subCeo=CEO[sub,]
+
+ hist(subCeo$age, breaks = 12:36 *2.5)
+boxplot(subCeo$salary ~subCeo$age)
+
+
+plot( subCeo$salary,log(subCeo$profits))
+abline(lm(log(subCeo$profits)~subCeo$salary),col="red")
+cor(subCeo$salary,log(subCeo$profits))
+```
+
+The market value has continous variable.
+while running a summary command you see there is big difference in the mean(=3450) and Median(=1200). This means that the data is positively skewed to the right with a lot data points close to the median but a relatively high number of of outliers with higher market value.
+
+When we see the boxplot it is clear that there are a many values which are above 1.5 times the 3 quatrile, causing the positive skew.
+
+
+```{r}
+
+summary(CEO$mktval)
+ggplot(CEO,aes(mktval,color = as.factor(grad)))+ geom_histogram(binwidth = 1000,fill ="red",col="black")
+
+ggplot(CEO,aes(y=mktval,x=1))+ geom_boxplot()
+
+boxplot(CEO$mktval)
+
+ggplot(CEO[CEO$mktval<=10000,],aes(mktval ))+ geom_histogram(binwidth = 200,fill ="red",col="black")
+
+```
+
+
+
+
+
+
+```{r}
+CEO[CEO$mktval==-1,]
+
+```
+
+We see that for all the negative market value data points the profits are also -1. Also CEO tenture is 1 and 2 similary company tenture is 3-4. This could potentially instances of corrupt data points, where the answers could have been recorded incorrectly
+
+
+```{r}
+cor(CEO$mktval,CEO)
+
+plot(sort(CEO$mktval[CEO$mktval<=10000],decreasing = T))
+ggplot(CEO,aes(mktval,color = as.factor(grad)))+ geom_histogram()
+
+
+cleanCEO=CEO[CEO$mktval<=10000 & CEO$profits<=1000,]
+
+ggplot(cleanCEO, aes(x = mktval, y = profits, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
+
+ggplot(cleanCEO, aes(x = mktval, y = salary, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
+
+
+```
+
+We can see a high correlation between market value and profits, which is expected for any company.
+Similary we see a good correlation between market value and salary.
+Also we see that the if the CEO has a graduate degree he is more likely to get a better salary than without a graduate degree
+
+
+
+#Age
+
+```{r}
+summary(CEO$age)
+hist(CEO$age, breaks = 8:40 *2.5)
+boxplot(salary ~age,data=CEO)
+ggplot(CEO,aes(age,color = as.factor(grad)))+ geom_histogram(binwidth = 1,fill ="red",col="black")
+
+ggplot(CEO,aes(age,color = as.factor(grad)))+ geom_histogram(binwidth = 5,fill ="red",col="black") 
+
+ggplot(CEO,aes(x=age,y=salary,color = as.factor(grad)))+ geom_point() 
+
+
+salary_means= by(CEO$salary,CEO$age,mean)
+plot(sort(unique(CEO$age)), salary_means)
+abline(lm(salary_means~sort(unique(CEO$age))),col="red")
+cor(salary_means,sort(unique(CEO$age)))
+```
+
+Narrowing age from 29  to 75 gives high co-relation
+
+```{r}
+
+CEO_age=CEO[CEO$age<=75 & CEO$age>=29,]
+salary_means= by(CEO_age$salary,CEO_age$age,mean)
+
+plot(sort(unique(CEO_age$age)), salary_means)
+abline(lm(salary_means~sort(unique(CEO_age$age))),col="red")
+cor(salary_means,sort(unique(CEO_age$age)))
+
+
+```
+
+```{r}
+summary(CEO$mktval)
+summary(CEO$profit)
+CEO[CEO$mktval<=0 ,]
+CEO[CEO$ceoten<=1,]
+CEO[CEO$comten>=42,]
+plot(CEO$mktval)
+
+
+plot( CEO$salary[CEO$salary<=3000],log(CEO$mktval[CEO$salary<=3000]))
+abline(lm(log(CEO$mktval[CEO$salary<=3000])~CEO$salary[CEO$salary<=3000]),col="red")
+cor( CEO$salary[CEO$salary<=3000],log(CEO$mktval[CEO$salary<=3000]),use="complete.obs")
+
+boxplot(mktval~salary,data = CEO)
+
+```
+
+```{r}
+boxplot(CEO$profits)
+summary(CEO$profits)
+plot( subCeo$salary,subCeo$profits)
+abline(lm(subCeo$profits~subCeo$salary),col="red")
+cor(subCeo$salary,subCeo$profits)
+
+plot(subCeo$profits,subCeo$salary)
+
+
+scatterplotMatrix(~salary+age+college +grad+comten+ceoten+profits+mktval,data = CEO)
+cor(CEO)
+plot(CEO$age)
+axis(100)
+hist(CEO$profits, breaks= -568:2700 + 100)
+boxplot(salary~profits, data=CEO[sub,])
+plot(CEO$profits[CEO$profits<=800 & CEO$profits>=-00])
+hist(CEO$age[CEO$age<=2500])
+```
+

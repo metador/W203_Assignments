@@ -13,41 +13,16 @@ When you click the **Knit** button a document will be generated that includes bo
 getwd()
 library(car)
 library(ggplot2)
+library(dplyr)
 load("ceo_w203.RData")
 summary(CEO)
 ```
 
-Only one data point in salary that is above 3000.
 
 
-```{r, echo=TRUE}
-summary(log(CEO$profits))
-old.par= par(mfrow(1,3))
-plot(CEO$salary)
-hist(CEO$salary, breaks = -10:140 *50)
-boxplot(CEO$salary)
-par(old.par)
-axis(2,50)
-?hist
-```
 
-
-```{r}
-
-
- hist(subCeo$age, breaks = 12:36 *2.5)
-boxplot(subCeo$salary ~subCeo$age)
-
-
-sub = CEO$salary<=3000 & CEO$profits<=1000 & CEO$profits>00
-subCeo=CEO[sub,]
-plot( subCeo$salary,log(subCeo$profits))
-abline(lm(log(subCeo$profits)~subCeo$salary),col="red")
-cor(subCeo$salary,log(subCeo$profits))
-```
-
-The market value has continous values.
-while running a summary command you see there is big difference in the mean(=3450) and Median(=1200). This means that the data is positively skewed to the right with a lot data points close to the median but a relatively high number of of outliers with higher market value.
+The market value has continous variable.
+While running a summary command you see there is big difference in the mean(=3450) and Median(=1200). This means that the data is positively skewed to the right with a lot data points close to the median but a relatively high number of of outliers with higher market value.
 
 When we see the boxplot it is clear that there are a many values which are above 1.5 times the 3 quatrile, causing the positive skew.
 
@@ -58,45 +33,31 @@ summary(CEO$mktval)
 ggplot(CEO,aes(mktval,color = as.factor(grad)))+ geom_histogram(binwidth = 1000,fill ="red",col="black")
 
 ggplot(CEO,aes(y=mktval,x=1))+ geom_boxplot()
-
-boxplot(CEO$mktval)
-
-ggplot(CEO[CEO$mktval<=10000,],aes(mktval ))+ geom_histogram(binwidth = 200,fill ="red",col="black")
-
 ```
 
 
 
-
-
+We see that there are some negative market value data points. These data points also have the profits as -1. 
+This could potentially instances of missing data points and default value of -1 is recorded. So we will be considering them as
 
 ```{r}
 CEO[CEO$mktval==-1,]
 
 ```
 
-We see that for all the negative market value data points the profits are also -1. Also CEO tenture is 1 and 2 similary company tenture is 3-4. This could potentially instances of corrupt data points, where the answers could have been recorded incorrectly
-
+We can see a high correlation between market value and profits, which is expected for most companies.
+Similary we see a good correlation between market value and salary.
+Also we see that the if the CEO has a graduate degree he is more likely to get a better salary than without a graduate degree
+On ploting the salary and profits against mktval, we see there are few data point that are outliers which are affecting the regression line thus 
 
 ```{r}
 cor(CEO$mktval,CEO)
 
-plot(sort(CEO$mktval[CEO$mktval<=10000],decreasing = T))
-ggplot(CEO,aes(mktval,color = as.factor(grad)))+ geom_histogram()
-
-
-cleanCEO=CEO[CEO$mktval<=10000 & CEO$profits<=1000,]
-
-ggplot(cleanCEO, aes(x = mktval, y = profits, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
-
-ggplot(cleanCEO, aes(x = mktval, y = salary, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
-
+ggplot(CEO, aes(x = mktval, y = profits, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
+ggplot(CEO, aes(x = mktval, y = salary, color = as.factor(grad))) +geom_point() + stat_smooth(method = "lm")
 
 ```
 
-We can see a high correlation between market value and profits, which is expected for any company.
-Similary we see a good correlation between market value and salary.
-Also we see that the if the CEO has a graduate degree he is more likely to get a better salary than without a graduate degree
 
 
 
@@ -106,29 +67,32 @@ Also we see that the if the CEO has a graduate degree he is more likely to get a
 summary(CEO$age)
 hist(CEO$age, breaks = 8:40 *2.5)
 boxplot(salary ~age,data=CEO)
-ggplot(CEO,aes(age,color = as.factor(grad)))+ geom_histogram(binwidth = 1,fill ="red",col="black")
-
-ggplot(CEO,aes(age,color = as.factor(grad)))+ geom_histogram(binwidth = 5,fill ="red",col="black") 
+ggplot(CEO,aes(age,color = as.factor(grad)))+ geom_histogram(binwidth = 2,fill ="red",col="black")
 
 ggplot(CEO,aes(x=age,y=salary,color = as.factor(grad)))+ geom_point() 
+
 
 
 salary_means= by(CEO$salary,CEO$age,mean)
 plot(sort(unique(CEO$age)), salary_means)
 abline(lm(salary_means~sort(unique(CEO$age))),col="red")
 cor(salary_means,sort(unique(CEO$age)))
+
+grouped = group_by(CEO, age)
+mean_salary_age = summarise(grouped, mean_salary = mean(salary, na.rm = T))
+ggplot(mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm")
+cor(mean_salary_age)
+
 ```
 
 Narrowing age from 29  to 75 gives high co-relation
 
 ```{r}
 
-CEO_age=CEO[CEO$age<=75 & CEO$age>=29,]
-salary_means= by(CEO_age$salary,CEO_age$age,mean)
+narrowed_mean_salary_age=mean_salary_age[mean_salary_age$age<=75 & mean_salary_age$age>=29,]
+ggplot(narrowed_mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm")
+cor(narrow_mean_salary_age)
 
-plot(sort(unique(CEO_age$age)), salary_means)
-abline(lm(salary_means~sort(unique(CEO_age$age))),col="red")
-cor(salary_means,sort(unique(CEO_age$age)))
 
 
 ```

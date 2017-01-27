@@ -72,15 +72,14 @@ ggplot(CEO,aes(y=log(mktval),x=as.factor(grad),color='red'))+ geom_boxplot()
 Age is a discrete variable.
 Looking at the histogram plot, we can see that the variable is close to a  normally distributed curve with the mean(55) and median(57).
 But you can see a drastic drop after the age of 65. 
-This likey co-responds to the age of retirement in the US.
+This co-responds to the age of retirement in the US.
 
 ```{r}
 summary(CEO$age)
 ggplot(CEO,aes(age,color = as.factor(1)))+ geom_histogram(binwidth = 3,fill ="red",col="black")
 ```
 
-If we simply plot a graph of age vs salary do not get any particular co-relation. The corelatoin is also very low(0.13)
-We do see that if you have a grad degree you are likely to get paid more as you in advance your career.
+If we simply plot a graph of age vs salary do not get any particular relation. The corelatoin is also very low(0.13)
 
 ```{r}
 ggplot(CEO,aes(x=age,y=salary,color = as.factor(1)))+ geom_point()+ stat_smooth(method = "lm")

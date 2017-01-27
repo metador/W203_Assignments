@@ -27,16 +27,17 @@ This could potentially instances of missing data points and default value of -1 
 ```{r}
 summary(CEO$mktval)
 CEO$mktval = ifelse(CEO$mktval == -1, NA, CEO$mktval)
+summary(CEO)
 ```
 
 The postive skew is clear in the histogram.
-Since there is a large variation in the values we can basically try to use the log of market value for our analysis.
 
 ```{r}
 
 ggplot(CEO,aes(mktval))+ geom_histogram(binwidth = 1000,fill ="red",col="black")
 ```
 
+Since there is a large variation in the values we will be using the log of market value for our analysis.
 The boxplot for the log of market value shows a more uniform distribution of data points
 ```{r}
 
@@ -46,9 +47,8 @@ ggplot(CEO,aes(y=log(mktval),x=1,color='red'))+ geom_boxplot()
 
 
 We can see a high correlation between market value and profits, which is expected for most companies.
-Similary we see a good correlation between market value and salary.
-Also we see that the if the CEO has a graduate degree he is more likely to get a better salary than without a graduate degree
-On ploting the salary and profits against mktval, we see there are few data point that are outliers which are affecting the regression line.
+Similary we see a good correlation between log of market value and salary.
+
 
 ```{r}
 cor(CEO$mktval,CEO, use="complete.obs")
@@ -56,6 +56,7 @@ cor(CEO$mktval,CEO, use="complete.obs")
 ggplot(CEO, aes(x = log(mktval), y = log(profits), color = as.factor(1))) +geom_point() + stat_smooth(method = "lm",se=F)
 
 ggplot(CEO, aes(x = log(mktval), y = salary, color = as.factor(1))) +geom_point() + stat_smooth(method = "lm",se=F)
+
 cor(log(CEO$mktval),CEO$salary,use = "complete.obs")
 ```
 

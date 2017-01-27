@@ -35,8 +35,6 @@ When we see the boxplot it is clear that there are a many values which are above
 
 summary(CEO$mktval)
 ggplot(CEO,aes(mktval))+ geom_histogram(binwidth = 1000,fill ="red",col="black")
-
-
 ggplot(CEO,aes(y=mktval,x=1))+ geom_boxplot()
 ```
 
@@ -52,10 +50,10 @@ cor(CEO$mktval,CEO, use="complete.obs")
 
 ggplot(CEO, aes(x = log(mktval), y = log(profits), color = as.factor(1))) +geom_point() + stat_smooth(method = "lm",se=F)
 cor(log(CEO$mktval),log(CEO$profits),use = "complete.obs")
-ggplot(CEO, aes(x = mktval, y = salary, color = as.factor(1))) +geom_point() + stat_smooth(method = "lm", se =F)
+
+
 ggplot(CEO, aes(x = log(mktval), y = salary, color = as.factor(1))) +geom_point() + stat_smooth(method = "lm", se =F)
 cor(log(CEO$mktval),CEO$salary,use = "complete.obs")
-
 ```
 
 
@@ -87,28 +85,17 @@ We see that within the age range 29 to 75 there might be a corelation between av
 This is also the range which has the maxium data points
 
 ```{r}
-salary_means= by(CEO$salary,CEO$age,mean)
-plot(sort(unique(CEO$age)), salary_means)
-abline(lm(salary_means~sort(unique(CEO$age))),col="red")
-cor(salary_means,sort(unique(CEO$age)))
-
-
 grouped = group_by(CEO, age)
 mean_salary_age = summarise(grouped, mean_salary = mean(salary, na.rm = T))
 ggplot(mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm", se =F)
 cor(mean_salary_age)
-
 ```
 
 Let Narrowing age from 29  to 75 
 We see a high co-relation between mean salary and the age within the age range 29 to 75
 
 ```{r}
-
 narrowed_mean_salary_age=mean_salary_age[mean_salary_age$age<=75 & mean_salary_age$age>=29,]
 ggplot(narrowed_mean_salary_age,aes(x=age,y=mean_salary,color = as.factor(1)))+ geom_point()  + stat_smooth(method = "lm", se =F)
 cor(narrowed_mean_salary_age$age,narrowed_mean_salary_age$mean_salary)
-
-
-
 ```

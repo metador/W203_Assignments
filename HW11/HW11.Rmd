@@ -1,0 +1,93 @@
+---
+title: "HW week 11"
+subtitle: "w203: Statistics for Data Science"
+author: "w203 teaching team"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Get familiar with the data
+You receive a data set from World Bank Development Indicators. 
+
+```{r}
+getwd()
+load("./Week11.Rdata")
+ls()
+library(car)
+scatterplotMatrix(Data[,-(1:2)], use="complete.obs")
+Definitions
+summary(Data)
+hist(Data$AG.LND.FRST.ZS)
+cor(!is.na(Data[,-(1:2)]))
+hist(Data$MS.MIL.MPRT.KD,breaks=100)
+hist(Data$MS.MIL.XPND.GD.ZS)
+hist(Data$MS.MIL.XPND.ZS,breaks =50)
+hist(Data$AG.LND.FRST.ZS)
+```
+  - Load the data using `load` and see what is loaded by using `ls()`. You should see `Data` which is the data frame including data, and `Descriptions` which is a data frame that includes variable names. 
+  - Look at the variables, read their descriptions, and take a look at their histograms. Think about the transformations that you may need to use for these variables in the section below. 
+  - Run: `apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )` and explain what it is showing.
+
+```{r}
+apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )
+ncol(Data[,-(1:2)] )
+ncol(Data)
+summary(!is.na(Data[,-(1:2)]))
+?apply
+
+```
+  - Can you include both `NE.IMP.GNFS.CD` and `NE.EXP.GNFS.CD` in the same OLS model? Why?
+```{r}
+cor(Data$NE.EXP.GNFS.CD,Data$NE.IMP.GNFS.CD,use="complete.obs")
+
+## Here we see that there is 99% correlation between Data$NE.EXP.GNFS.CD,Data$NE.IMP.GNFS.CD. This mean it will not satisify our no Multicolinearity assumption
+
+```
+  - Rename the variable named `AG.LND.FRST.ZS` to `forest.` This is going to be our dependent variable.
+```{r}
+colnames(Data)[3]="forest"
+
+```
+
+### Decribe a model for that predicts `forest`
+
+  - Write a model with two explanatory variables. 
+```{r}
+model1 = lm(forest ~ TX.VAL.AGRI.ZS.UN + NY.GDP.PETR.RT.ZS, data =Data, na.action = na.omit)
+?lm
+model1
+plot(model1, which = 1, main = "Model 1 for forest")
+summary(model1)$r.squared
+```
+    - Create a residuals versus fitted values plot and assess whether your coefficients are unbiased.
+     - How many observations are being used in your analysis? 
+     
+```{r}
+nrow(Data)
+nobs(model1)
+dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$NY.GDP.PETR.RT.ZS) | is.na(Data$forest),]
+nrow(dropped_obs)
+head(dropped_obs)
+
+```
+     - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
+  - Now add a third variable.
+  - Show how you would use the regression anatomy formula to compute the coefficient on your third variable.  First, regress the third variable on your first two variables and extract the residuals.  Next, regress forest on the residuals from the first stage.
+  - Compare your two models.
+      - Do you see an improvement? Explain how you can tell.
+
+### Make up a country
+
+  - Make up a country named `Mediland` which has every indicator set at the median value observed in the data. 
+  - How much forest would this country have?
+    
+### Take away
+
+  - What is the causal story, if any, that you can take away from the above analysis? Explain why.
+
+
+
+

@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)]
 ```
 
 ### Get familiar with the data
@@ -18,10 +18,26 @@ load("./Week11.Rdata")
 ls()
 library(car)
 scatterplotMatrix(Data[,-(1:2)], use="complete.obs")
+```
+
+```{r}
+summary(Data)
+```
+
+
+```{r}
+cor(!is.na(Data[,-(1:2)]))
+
+for (i in 2:13)
+  {
+boxplot(!is.na(Data[,i]))
+}
+
+
+
 Definitions
 summary(Data)
 hist(Data$AG.LND.FRST.ZS)
-cor(!is.na(Data[,-(1:2)]))
 hist(Data$MS.MIL.MPRT.KD,breaks=100)
 hist(Data$MS.MIL.XPND.GD.ZS)
 hist(Data$MS.MIL.XPND.ZS,breaks =50)
@@ -29,6 +45,10 @@ hist(Data$AG.LND.FRST.ZS)
 ```
   - Load the data using `load` and see what is loaded by using `ls()`. You should see `Data` which is the data frame including data, and `Descriptions` which is a data frame that includes variable names. 
   - Look at the variables, read their descriptions, and take a look at their histograms. Think about the transformations that you may need to use for these variables in the section below. 
+```{r}
+Definitions
+```
+  
   - Run: `apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )` and explain what it is showing.
 
 ```{r}
@@ -49,45 +69,96 @@ cor(Data$NE.EXP.GNFS.CD,Data$NE.IMP.GNFS.CD,use="complete.obs")
   - Rename the variable named `AG.LND.FRST.ZS` to `forest.` This is going to be our dependent variable.
 ```{r}
 colnames(Data)[3]="forest"
-
+# Here we have renamed the AG.LND.FRST.zs column to forest
 ```
 
 ### Decribe a model for that predicts `forest`
 
   - Write a model with two explanatory variables. 
 ```{r}
-model1 = lm(forest ~ TX.VAL.AGRI.ZS.UN + NY.GDP.PETR.RT.ZS, data =Data, na.action = na.omit)
+model1 = lm(forest ~ TX.VAL.AGRI.ZS.UN + NY.GDP.PETR.RT.ZS + , data =Data, na.action = na.omit)
 ?lm
 model1
 plot(model1, which = 1, main = "Model 1 for forest")
 summary(model1)$r.squared
 ```
+ 
+ Trails  
+```{r}
+model1 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data =Data, na.action = na.omit)
+model1
+
+summary(model1)$r.squared
+AIC(model1)
+```
+   
     - Create a residuals versus fitted values plot and assess whether your coefficients are unbiased.
+    
+```{r}
+plot(model1, which = 1, main = "Model 1 for forest")
+summary(model1$residuals)
+sum(model1$residuals)
+```
      - How many observations are being used in your analysis? 
      
 ```{r}
 nrow(Data)
 nobs(model1)
-dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$NY.GDP.PETR.RT.ZS) | is.na(Data$forest),]
+dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$MS.MIL.XPRT.KD) | is.na(Data$forest),]
 nrow(dropped_obs)
 head(dropped_obs)
 
 ```
      - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
-  - Now add a third variable.
+  - Now add a third variable.'
+```{r}
+model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PETR.RT.ZS , data =Data, na.action = na.omit)
+model2
+summary(model2)$r.squared
+AIC(model2)
+
+```
   - Show how you would use the regression anatomy formula to compute the coefficient on your third variable.  First, regress the third variable on your first two variables and extract the residuals.  Next, regress forest on the residuals from the first stage.
+  
+```{r}
+third_var = lm(NY.GDP.PETR.RT.ZS ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data= model2$model,na.action = na.omit )
+forest=model2$model$forest
+beta_3= cov(forest,third_var$residuals)/var(third_var$residuals)
+## value from regression anatomy
+print("Values from regression anatomy: ")
+beta_3
+## value from model
+print("Values from model coefficient: ") 
+model2$coefficients[4]
+```
   - Compare your two models.
       - Do you see an improvement? Explain how you can tell.
+```{r}
+AIC(model1)
+AIC(model2)
+```
 
+```{r, results='asis'}
+stargazer(model1, model2, type = "text", report = "vc",
+          header = FALSE,
+          title = "Linear Models Predicting College GPA",
+          keep.stat = c( "rsq", "n","aic"),
+          omit.table.layout = "n")
+```
 ### Make up a country
 
   - Make up a country named `Mediland` which has every indicator set at the median value observed in the data. 
   - How much forest would this country have?
     
+```{r}
+predict(model1,data.frame(MS.MIL.XPND.GD.ZS=mean(Data$MS.MIL.XPND.GD.ZS,na.rm = TRUE),TX.VAL.AGRI.ZS.UN =mean(Data$TX.VAL.AGRI.ZS.UN,na.rm = TRUE )))
+
+```
 ### Take away
 
   - What is the causal story, if any, that you can take away from the above analysis? Explain why.
 
+```{r}
+# We cannot say yj
 
-
-
+```

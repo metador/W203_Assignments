@@ -36,7 +36,7 @@ summary(Data)
 hist(Data$AG.LND.FRST.ZS)
 hist(Data$MS.MIL.XPND.GD.ZS, breaks = 35)
 hist(Data$TX.VAL.AGRI.ZS.UN,breaks =50)
-hist(log(Data$NY.GDP.PCAP.CD),breaks = 100 )
+hist(Data$NY.GDP.PCAP.CD,breaks = 100 )
 ```
 
   - Run: `apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )` and explain what it is showing.
@@ -64,7 +64,7 @@ colnames(Data)[3]="forest"
 
   - Write a model with two explanatory variables. 
 
->> Here we have a model with two variable. I choose TX.VAL.AGRI.ZS.UN i.e.total argiculuture export(% of total GDP) and MS.MIL.XPND.GD.ZS military expenditure(% of GDP) 
+>> Here we have a model with two variable. I choose TX.VAL.AGRI.ZS.UN i.e.total argiculuture export(% of total GDP) and MS.MIL.XPND.GD.ZS military expenditure(% of GDP). 
 ```{r}
 model1 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data =Data, na.action = na.omit)
 model1
@@ -73,10 +73,18 @@ AIC(model1)
 
 ```
    
+>>We see that the model can explain 14% of the data.
+
     - Create a residuals versus fitted values plot and assess whether your coefficients are unbiased.
     
 ```{r}
 plot(model1, which = 1, main = "Model 1 for forest")
+
+```
+>> we see that at the left side it is off but there are very fewe data points present in the left. Overall the line is almost centered at the center.
+>> We can verify this by taking the mean or the sum of the residuals. Thus E(u_hat)~=0
+
+```{r}
 summary(model1$residuals)
 sum(model1$residuals)
 ```
@@ -85,11 +93,17 @@ sum(model1$residuals)
 ```{r}
 nrow(Data)
 nobs(model1)
+
+```
+>> We see there are 183 observations in the plot
+
+     - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
+```{r}
 dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$MS.MIL.XPND.GD.ZS) | is.na(Data$forest),]
 nrow(dropped_obs)
 head(dropped_obs)
 ```
-     - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
+
   - Now add a third variable.'
 ```{r}
 model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PCAP.CD , data =Data, na.action = na.omit)
@@ -112,10 +126,13 @@ model2$coefficients[4]
 ```
   - Compare your two models.
       - Do you see an improvement? Explain how you can tell.
+
+>> We will take the AIC as well as use the Stargazer for evalualting which model is better(AIC in my statgazer plot is not working).
 ```{r}
 AIC(model1)
 AIC(model2)
 ```
+
 
 ```{r, results='asis'}
 stargazer(model1, model2, type = "text", report = "vc",
@@ -124,6 +141,9 @@ stargazer(model1, model2, type = "text", report = "vc",
           keep.stat = c( "rsq", "n","aic"),
           omit.table.layout = "n")
 ```
+Looking at the AIC we can see that the model1 is better than model2
+
+
 ### Make up a country
 
   - Make up a country named `Mediland` which has every indicator set at the median value observed in the data. 

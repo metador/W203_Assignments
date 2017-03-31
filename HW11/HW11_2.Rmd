@@ -21,16 +21,11 @@ library(car)
 
 ```{r}
 summary(Data)
+cor(Data[,-(1:2)], use="complete.obs")
 ```
 
 
 ```{r}
-cor(!is.na(Data[,-(1:2)]))
-
-for (i in 2:13)
-  {
-boxplot(!is.na(Data[,i]))
-}
 
 
 
@@ -38,8 +33,9 @@ Definitions
 summary(Data)
 hist(Data$AG.LND.FRST.ZS)
 hist(Data$MS.MIL.MPRT.KD,breaks=100)
-hist(Data$MS.MIL.XPND.GD.ZS)
-hist(Data$MS.MIL.XPND.ZS,breaks =50)
+hist(log(Data$MS.MIL.XPND.GD.ZS), breaks = 35)
+hist(log(Data$TX.VAL.AGRI.ZS.UN),breaks =50)
+hist(log(Data$NY.GDP.PETR.RT.ZS))
 hist(Data$AG.LND.FRST.ZS)
 ```
   - Load the data using `load` and see what is loaded by using `ls()`. You should see `Data` which is the data frame including data, and `Descriptions` which is a data frame that includes variable names. 
@@ -101,8 +97,9 @@ head(dropped_obs)
      - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
   - Now add a third variable.'
 ```{r}
-model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PETR.RT.ZS , data =Data, na.action = na.omit)
+model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PCAP.CD , data =Data, na.action = na.omit)
 model2
+
 summary(model2)$r.squared
 AIC(model2)
 
@@ -110,7 +107,7 @@ AIC(model2)
   - Show how you would use the regression anatomy formula to compute the coefficient on your third variable.  First, regress the third variable on your first two variables and extract the residuals.  Next, regress forest on the residuals from the first stage.
   
 ```{r}
-third_var = lm(NY.GDP.PETR.RT.ZS ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data= model2$model,na.action = na.omit )
+third_var = lm(NY.GDP.PCAP.CD~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data= model2$model,na.action = na.omit )
 forest=model2$model$forest
 beta_3= cov(forest,third_var$residuals)/var(third_var$residuals)
 ## value from regression anatomy

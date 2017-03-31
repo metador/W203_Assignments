@@ -11,61 +11,53 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Get familiar with the data
 You receive a data set from World Bank Development Indicators. 
-
+  - Load the data using `load` and see what is loaded by using `ls()`. You should see `Data` which is the data frame including data, and `Descriptions` which is a data frame that includes variable names. 
 ```{r}
 getwd()
 load("./Week11.Rdata")
 ls()
-library(car)
 ```
 
 ```{r}
-summary(Data)
-```
-
-
-```{r}
-cor(!is.na(Data[,-(1:2)]))
-
-for (i in 2:13)
-  {
-boxplot(!is.na(Data[,i]))
-}
-
-
-
 Definitions
-summary(Data)
-hist(Data$AG.LND.FRST.ZS)
-hist(Data$MS.MIL.MPRT.KD,breaks=100)
-hist(Data$MS.MIL.XPND.GD.ZS)
-hist(Data$MS.MIL.XPND.ZS,breaks =50)
-hist(Data$AG.LND.FRST.ZS)
 ```
-  - Load the data using `load` and see what is loaded by using `ls()`. You should see `Data` which is the data frame including data, and `Descriptions` which is a data frame that includes variable names. 
+
   - Look at the variables, read their descriptions, and take a look at their histograms. Think about the transformations that you may need to use for these variables in the section below. 
-```{r}
-Definitions
-```
-  
-  - Run: `apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )` and explain what it is showing.
 
+```{r}
+summary(Data)
+cor(Data[,-(1:2)], use="complete.obs")
+```
+ >> Here we see that there is a high correlation of AG.LND.FRST.ZS(forest) with TX.VAL.AGRI.ZS.UN, MS.MIL.XPND.GD.ZS , MS.MIL.XPND.ZS , MS.MIL.XPRT.KD and NY.GDP.PCAP.CD. Since we need independent variables to be not correlated  we cannot use MS.MIL.XPND.GD.ZS and MS.MIL.XPND.ZS together since they have high correlation. Similary MS.MIL.XPND.ZS and MS.MIL.XPRT.KD have a lot of na values(from summary). Thus it reduces our confidence in these variables
+ 
+We examine the some of the variables. 
+```{r}
+summary(Data)
+hist(Data$AG.LND.FRST.ZS)
+hist(Data$MS.MIL.XPND.GD.ZS, breaks = 35)
+hist(Data$TX.VAL.AGRI.ZS.UN,breaks =50)
+hist(log(Data$NY.GDP.PCAP.CD),breaks = 100 )
+```
+
+  - Run: `apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )` and explain what it is showing.
+>> This above command shows the ratio of the na data to actual data points. This indicates the level of confidence we can have on the variable, since we will be omitting all the na values while running our regression. We can arrive at the same answer using column means
 ```{r}
 apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )
-## This above command shows the ratio of the na data to actual data points. This indicates the level of confidence we can have on the variable, since we will be omitting all the na values while running our regression. We can arrive at the same answer using column means
+
 colMeans(!is.na(Data[,-(1:2)] ))
 ```
+  
   - Can you include both `NE.IMP.GNFS.CD` and `NE.EXP.GNFS.CD` in the same OLS model? Why?
 ```{r}
 cor(Data$NE.EXP.GNFS.CD,Data$NE.IMP.GNFS.CD,use="complete.obs")
-
-## Here we see that there is 99% correlation between Data$NE.EXP.GNFS.CD,Data$NE.IMP.GNFS.CD. This mean it will not satisify our no Multicolinearity assumption
-
 ```
+ >> Here we see that there is 99% correlation between Data$NE.EXP.GNFS.CDand Data$NE.IMP.GNFS.CD. This mean it will not satisify our no Multicolinearity assumption
+ 
   - Rename the variable named `AG.LND.FRST.ZS` to `forest.` This is going to be our dependent variable.
+>> Here we have renamed the AG.LND.FRST.zs column to forest
 ```{r}
 colnames(Data)[3]="forest"
-# Here we have renamed the AG.LND.FRST.zs column to forest
+
 ```
 
 ### Decribe a model for that predicts `forest`
@@ -76,7 +68,6 @@ colnames(Data)[3]="forest"
 ```{r}
 model1 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data =Data, na.action = na.omit)
 model1
-
 summary(model1)$r.squared
 AIC(model1)
 ```
@@ -93,24 +84,22 @@ sum(model1$residuals)
 ```{r}
 nrow(Data)
 nobs(model1)
-dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$MS.MIL.XPRT.KD) | is.na(Data$forest),]
+dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$MS.MIL.XPND.GD.ZS) | is.na(Data$forest),]
 nrow(dropped_obs)
 head(dropped_obs)
-
 ```
      - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
   - Now add a third variable.'
 ```{r}
-model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PETR.RT.ZS , data =Data, na.action = na.omit)
+model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PCAP.CD , data =Data, na.action = na.omit)
 model2
 summary(model2)$r.squared
 AIC(model2)
-
 ```
   - Show how you would use the regression anatomy formula to compute the coefficient on your third variable.  First, regress the third variable on your first two variables and extract the residuals.  Next, regress forest on the residuals from the first stage.
   
 ```{r}
-third_var = lm(NY.GDP.PETR.RT.ZS ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data= model2$model,na.action = na.omit )
+third_var = lm(NY.GDP.PCAP.CD ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data= model2$model,na.action = na.omit )
 forest=model2$model$forest
 beta_3= cov(forest,third_var$residuals)/var(third_var$residuals)
 ## value from regression anatomy
@@ -141,7 +130,6 @@ stargazer(model1, model2, type = "text", report = "vc",
     
 ```{r}
 predict(model1,data.frame(MS.MIL.XPND.GD.ZS=mean(Data$MS.MIL.XPND.GD.ZS,na.rm = TRUE),TX.VAL.AGRI.ZS.UN =mean(Data$TX.VAL.AGRI.ZS.UN,na.rm = TRUE )))
-
 ```
 ### Take away
 
@@ -149,5 +137,4 @@ predict(model1,data.frame(MS.MIL.XPND.GD.ZS=mean(Data$MS.MIL.XPND.GD.ZS,na.rm = 
 
 ```{r}
 # We cannot say that it is a causal relationship. Here we are just trying to fit a line that best fits the model. There might be are other variables such a rainfall, weather conditions that are important for forest developments but are not included in this model. These are captured as error .i.e u . Also in the model see some negative fitted values. These is impossible values for forest area thus we indicating that the error in the model is high. 
-
 ```

@@ -114,6 +114,7 @@ beta_3= cov(forest,third_var$residuals)/var(third_var$residuals)
 print("Values from regression anatomy: ")
 beta_3
 ## value from model
+
 print("Values from model coefficient: ") 
 model2$coefficients[4]
 ```

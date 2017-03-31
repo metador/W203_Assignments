@@ -70,6 +70,7 @@ model1 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data =Data, na.acti
 model1
 summary(model1)$r.squared
 AIC(model1)
+
 ```
    
     - Create a residuals versus fitted values plot and assess whether your coefficients are unbiased.

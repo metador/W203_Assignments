@@ -26,21 +26,30 @@ Definitions
 
 ```{r}
 summary(Data)
+```
+```{r}
 cor(Data[,-(1:2)], use="complete.obs")
 ```
- >> Here we see that there is a high correlation of AG.LND.FRST.ZS(forest) with TX.VAL.AGRI.ZS.UN, MS.MIL.XPND.GD.ZS , MS.MIL.XPND.ZS , MS.MIL.XPRT.KD and NY.GDP.PCAP.CD. Since we need independent variables to be not correlated  we cannot use MS.MIL.XPND.GD.ZS and MS.MIL.XPND.ZS together since they have high correlation. Similary MS.MIL.XPND.ZS and MS.MIL.XPRT.KD have a lot of na values(from summary). Thus it reduces our confidence in these variables
+ >> Here we see that there is a high correlation of AG.LND.FRST.ZS(forest) with TX.VAL.AGRI.ZS.UN, MS.MIL.XPND.GD.ZS , MS.MIL.XPND.ZS , MS.MIL.XPRT.KD and NY.GDP.PCAP.CD. Since we need the independent variables to be not correlated  we cannot use MS.MIL.XPND.GD.ZS and MS.MIL.XPND.ZS together, since they have high correlation. Also MS.MIL.XPND.ZS and MS.MIL.XPRT.KD have a lot of na values(from summary). Using these variables reduces our confidence in the model
  
-We examine the some of the variables. 
+We examine the some of the variables using histogram
 ```{r}
-summary(Data)
 hist(Data$AG.LND.FRST.ZS)
 hist(Data$MS.MIL.XPND.GD.ZS, breaks = 35)
 hist(Data$TX.VAL.AGRI.ZS.UN,breaks =50)
-hist(Data$NY.GDP.PCAP.CD,breaks = 100 )
+hist(Data$NY.GDP.PCAP.CD,breaks =50)
 ```
 
+NOTE-
+%%%%
+We see there are left skewd, so a log tranformation can help tranform the data to a normal distribution. But there are "0" present in the data. Since log(0) is infinity we will have to either change the 0 values to something else or omit these data points. Both approaches will be determinantal to the performance of our model.
+
+HENCE WE CHOOSE NOT TO APPLY ANY LOG TRANSFORMATION TO THIS DATA
+
+%%%
+
   - Run: `apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )` and explain what it is showing.
->> This above command shows the ratio of the na data to actual data points. This indicates the level of confidence we can have on the variable, since we will be omitting all the na values while running our regression. We can arrive at the same answer using column means
+>> This above command shows the ratio of the na data to actual data points. This indicates the level of confidence we can have on each of the variable, since we will be omitting all the na values while running our regression. We can arrive at the same answer using column means
 ```{r}
 apply(!is.na(Data[,-(1:2)] ) , MARGIN= 2, mean )
 
@@ -51,7 +60,7 @@ colMeans(!is.na(Data[,-(1:2)] ))
 ```{r}
 cor(Data$NE.EXP.GNFS.CD,Data$NE.IMP.GNFS.CD,use="complete.obs")
 ```
- >> Here we see that there is 99% correlation between Data$NE.EXP.GNFS.CDand Data$NE.IMP.GNFS.CD. This mean it will not satisify our no Multicolinearity assumption
+ >> Here we see that there is 99% correlation between Data$NE.EXP.GNFS.CDand Data$NE.IMP.GNFS.CD. These will not satisify our no Multicolinearity assumption if used together in our model.
  
   - Rename the variable named `AG.LND.FRST.ZS` to `forest.` This is going to be our dependent variable.
 >> Here we have renamed the AG.LND.FRST.zs column to forest
@@ -64,52 +73,60 @@ colnames(Data)[3]="forest"
 
   - Write a model with two explanatory variables. 
 
->> Here we have a model with two variable. I choose TX.VAL.AGRI.ZS.UN i.e.total argiculuture export(% of total GDP) and MS.MIL.XPND.GD.ZS military expenditure(% of GDP). 
+>> Here we have a model with two variable. We choose TX.VAL.AGRI.ZS.UN i.e.total argiculuture export(% of total GDP) and MS.MIL.XPND.GD.ZS military expenditure(% of total expenditure). 
 ```{r}
 model1 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN , data =Data, na.action = na.omit)
 model1
 summary(model1)$r.squared
 AIC(model1)
-
 ```
    
->>We see that the model can explain 14% of the data.
+>>We see that the model can explain 12% of the data.
 
     - Create a residuals versus fitted values plot and assess whether your coefficients are unbiased.
-    
 ```{r}
 plot(model1, which = 1, main = "Model 1 for forest")
-
 ```
->> we see that at the left side it is off but there are very fewe data points present in the left. Overall the line is almost centered at the center.
->> We can verify this by taking the mean or the sum of the residuals. Thus E(u_hat)~=0
 
 ```{r}
 summary(model1$residuals)
 sum(model1$residuals)
 ```
+>> we see that at the  extreme left and extreme right side it is off, but there are very few data points present in these areas. Thus we can ignore them for now. Overall the line is almost centered at the center.
+>> We can verify this by taking the mean or the sum of the residuals. Thus proving E(u_hat)~=0. Satisfying the 4th assumption.
+
+>> We are using variables linear in u, thus we satisfy assumption 1
+>> Also we are using data from world bank development indicator data set. They are reliable source and thus we can assume random sampling, satisfying assumption 2
+>> We chose variables which have low co-relation between themselves, thus satisfying assumption 3 
+>> Since we satisfy all four assumptions we can say the estimators are unbaised
+
      - How many observations are being used in your analysis? 
      
 ```{r}
 nrow(Data)
 nobs(model1)
-
 ```
->> We see there are 183 observations in the plot
+>> We see there are 183 observations in the plot of 265 available
 
      - Are the countries that are dropping out dropping out by random chance? If not, what would this do to our inference? 
 ```{r}
-dropped_obs <- Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$MS.MIL.XPND.GD.ZS) | is.na(Data$forest),]
+dropped_obs = Data[ is.na(Data$TX.VAL.AGRI.ZS.UN) | is.na(Data$MS.MIL.XPND.GD.ZS) | is.na(Data$forest),]
 nrow(dropped_obs)
-head(dropped_obs)
+
+head(dropped_obs[is.na(dropped_obs$MS.MIL.XPND.GD.ZS),])
+head(dropped_obs[is.na(dropped_obs$TX.VAL.AGRI.ZS.UN),])
+head(dropped_obs[is.na(dropped_obs$forest),])
+
+print(" No of row with TX.VAL.AGRI.ZS.UN and MS.MIL.XPND.GD.ZS as null")
+nrow(dropped_obs[is.na(dropped_obs$TX.VAL.AGRI.ZS.UN) | is.na(dropped_obs$MS.MIL.XPND.GD.ZS),])
 ```
+>> looking at the country names we see that most of the countries are small island countries or union territory of bigger countries like US, China or UK. Most of the countries do not have a decicated military or are incapable of agriculture. Thus we see NA either with MS.MIL.XPND.GD.ZS(Military expenditure) or in TX.VAL.AGRI.ZS.UN( Agricultural export). There are other countries like Syria and Korea that may not be reporting their military expenditure.
 
   - Now add a third variable.'
 ```{r}
 model2 = lm(forest ~ MS.MIL.XPND.GD.ZS + TX.VAL.AGRI.ZS.UN +NY.GDP.PCAP.CD , data =Data, na.action = na.omit)
 model2
 summary(model2)$r.squared
-AIC(model2)
 ```
   - Show how you would use the regression anatomy formula to compute the coefficient on your third variable.  First, regress the third variable on your first two variables and extract the residuals.  Next, regress forest on the residuals from the first stage.
   
@@ -135,7 +152,8 @@ AIC(model2)
 
 
 ```{r, results='asis'}
-stargazer(model1, model2, type = "text", report = "vc",
+library(stargazer)
+stargazer(model1, model2, type = "latex", report = "vc",
           header = FALSE,
           title = "Linear Models Predicting College GPA",
           keep.stat = c( "rsq", "n","aic"),
@@ -152,10 +170,10 @@ Looking at the AIC we can see that the model1 is better than model2
 ```{r}
 predict(model1,data.frame(MS.MIL.XPND.GD.ZS=mean(Data$MS.MIL.XPND.GD.ZS,na.rm = TRUE),TX.VAL.AGRI.ZS.UN =mean(Data$TX.VAL.AGRI.ZS.UN,na.rm = TRUE )))
 ```
+>> We see that the forest comes to 29.43 which is not equal to the mean of the forest.
+
 ### Take away
 
   - What is the causal story, if any, that you can take away from the above analysis? Explain why.
 
-```{r}
-# We cannot say that it is a causal relationship. Here we are just trying to fit a line that best fits the model. There might be are other variables such a rainfall, weather conditions that are important for forest developments but are not included in this model. These are captured as error .i.e u . Also in the model see some negative fitted values. These is impossible values for forest area thus we indicating that the error in the model is high. 
-```
+>> We cannot say that it is a causal relationship. Here we are just trying to fit a line that best fits the model. There might be are other variables such a rainfall, weather conditions that are important for forest developments but are not included in this model. These are captured as error .i.e u . Also in the model see some negative fitted values. These is impossible values for forest area thus we indicating that the error in the model is high. 

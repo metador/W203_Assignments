@@ -1,6 +1,6 @@
 ---
 title: "HW week 12"
-subtitle: "w203: Statistics for Data Science"
+subtitle: "w203: Statistics for youtb_data Science"
 author: "w203 teaching team"
 output: pdf_document
 ---
@@ -11,26 +11,30 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # OLS Inference
 
-The file videos.txt contains data scraped from Youtube.com.
+The file videos.txt contains youtb_data scraped from Youtube.com.
 ```{r}
-data = read.delim("./videos.txt",header=TRUE , sep="\t")
-summary(data)
+youtb_data = read.delim("./videos.txt",header=TRUE , sep="\t")
+summary(youtb_data)
+library(car)
+library(lmtest)
+library(sandwich)
+library(stargazer)
 ```
 
 ```{r}
-hist(data$views)
-hist(log(data$views),breaks=50)
-hist(log(data$length),breaks=50)
-hist(data$rate)
+hist(youtb_data$views)
+hist(log(youtb_data$views),breaks=50)
+hist(log(youtb_data$length),breaks=50)
+hist(youtb_data$rate)
 
 ```
 
 1. Fit a linear model predicting the number of views (views), from the length of a video (length) and its average user rating (rate).
 ```{r}
 
-model1 = lm(log(views)~rate + log(length) , data = data, na.action = na.omit)
-summary(model2)
-model2 = lm(log(views)~rate + length , data = data, na.action = na.omit)
+model1 = lm(log(views)~rate + log(length) , data = youtb_data, na.action = na.omit)
+summary(model1)
+model2 = lm(log(views)~rate + length , data = youtb_data, na.action = na.omit)
 ```
 
 
@@ -41,9 +45,44 @@ plot(model1, pch=".")
 plot(model2)
 plot(model2, pch=".")
 
-hist(model1$residuals,breaks=50)
+## For No perfect multicollinearity
+vif(model1)
+vcovHC(model1)
+
+## using the bptest are are looking for Homoskedasticity
+
+bptest(model1)
+
 hist(model2$residuals, breaks=50)
+
+## Lets do check  for normaility of the residuals
+hist(model1$residuals,breaks=50)
+
+## the plot looks quite normal.
+## Let us test it using the Shapiro-Wilk
+
+sampler <-function(full_youtb_data){
+  return (sample(full_youtb_data,5000))
+}
+s=rep(shapiro.test(sampler(model1$residuals))$p.value,1000)
+s
+s = shapiro.test(sampler(model1$residuals))
+factors(s)
+i=1
+for (i in 1:10000){
+  s[i]=shapiro.test(sampler(model1$residuals))$p.value
+}
+
+mean(s)
+## Here we see that the p-value is 0.035 which is less than the threshold  so the residual is normally distributed statifying our 6 assumption
+
+vcovHC(model1)
 ```
 
 
-3. Generate a printout of your model coefficients, complete with standard errors that are valid given your diagnostics.  Comment on both the practical and statistical significance of your coefficients.
+3. Generate a printout of your model coefficients, complete with standard errors that are valid given your diagnostics.  Comment on both the practical and statistical significance of your coefficients
+
+.
+```{r}
+coeftest(model1, vcov = vcovHC)
+```

@@ -83,7 +83,7 @@ shapiro.test(model1$residuals)
 # We can confirm the presense of heteroskedasticity with
 # a Breusch-Pagan test.  Be careful to consider the sample
 # size when interpreting this test.
-bptest(model1)
+?bptest(model1)
 
 #####################################################################
 # Responding to violated assumptions.

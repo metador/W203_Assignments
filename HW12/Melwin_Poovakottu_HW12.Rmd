@@ -1,0 +1,143 @@
+---
+title: "HW week 12"
+subtitle: "w203: Statistics for youtb_data Science"
+author: "w203 teaching team"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# OLS Inference
+
+The file videos.txt contains youtb_data scraped from Youtube.com.
+```{r}
+youtb_data = read.delim("./videos.txt",header=TRUE , sep="\t")
+summary(youtb_data)
+library(car)
+library(lmtest)
+library(sandwich)
+library(stargazer)
+```
+
+```{r}
+hist(youtb_data$views)
+plot(sort(youtb_data$views) )
+## From the plots we can see that the views are large variations in data.
+##Also they have some outliers.
+
+## We will be take the log of views and log of length for this model
+## Let us look at the histogram of log(view), log(length) and rate 
+hist(log(youtb_data$views),breaks=50) 
+hist(log(youtb_data$length),breaks=50)
+hist(youtb_data$rate)
+```
+
+1. Fit a linear model predicting the number of views (views), from the length of a video (length) and its average user rating (rate).
+```{r}
+
+model1 = lm(log(views)~rate + log(length) , data = youtb_data, na.action = na.omit)
+summary(model1)
+par(mfrow=c(2,2))
+plot(model1)
+
+## Looking at the Residuals vs Leverage plots we can see that even though
+##there are many outliers they are not influential.
+```
+
+
+2. Using diagnostic plots, background knowledge, and statistical tests, assess all 6 assumptions of the CLM.  When an assumption is violated, state what response you will take.
+```{r}
+## ASSUMPTION 1:Linear population model  
+## We can see that the plot is linear in the coefficents due to 
+##its desgin.
+
+##ASSUMPTION 2: Random Sampling
+## Since the data is as is from the source(Youtube), we are safe 
+##to assume random sampling
+
+##Assupmtion 3:No perfect multicollinearity
+##We will be using Vif as well as vcovHC to see if there are 
+#any variables with mutlicollinearity
+vif(model1)
+```
+
+We don't see any variables with vif value more that 4
+```{r}
+## We us also can check the variance-covariance matrix 
+vcovHC(model1)
+```
+We don't see any co-variance more that .75
+
+
+## AssumptionZero-conditional mean
+```{r}
+plot(model1,which = 1)
+mean(model1$residuals)
+```
+
+We can see that the line is almost straight and around zero. Also the mean of the residuals is very close to zero. So we can satisfy the zero conditional mean assumption.
+
+```{r}
+## using the the scale-location plot and Breusch-Pagan test we
+## will be testing for Homoskedasticity
+plot(model1,which = 3)
+bptest(model1)
+```
+From the scale-location plot is looks like the variance is less in the lower values  and increase for higher values.
+Also, the p-value from Breusch-Pagan test is below 0.05 so we reject the null hypothesis, so the data is heteroskedasitic. 
+Going forward we will be using heteroskedasitic robust coefficients 
+
+```{r}
+## Lets do check  for normaility of the residuals
+## We will be looking at qq-plot and a histogram of the errors
+hist(model1$residuals,breaks=50)
+plot(model1,which = 2)
+```
+the plots looks quite normal, but the qq-plot looks little off at the edges.
+Let us try the Shapiro wik test
+Since Shapiro test can only take 5000 record we will be running the test 1000 times with different samples of the data(sets of 5000) and looking at the mean p-value. 
+```{r}
+## Let us test it using the Shapiro-Wilk
+
+sampler <-function(full_youtb_data){
+  return (sample(full_youtb_data,5000))
+}
+s=rep(shapiro.test(sampler(model1$residuals))$p.value,1000)
+
+i=1
+for (i in 1:1000){
+  s[i]=shapiro.test(sampler(model1$residuals))$p.value
+}
+
+mean(s)
+```
+Here we see that the p-value is 0.0034 which is less than the threshold of 0.05 we can reject the null hypothesis and say it is not normal. 
+
+But the sample size is huge and so we can apply CLT which implies that OLS coefficients have a normal sampling distribution.
+
+
+3. Generate a printout of your model coefficients, complete with standard errors that are valid given your diagnostics.  Comment on both the practical and statistical significance of your coefficients
+
+
+```{r}
+(coeftest(model1, vcov = vcovHC))
+
+(se.model1 = sqrt(diag(vcovHC(model1))))
+
+stargazer(model1, type = "text", report = "vc",
+          header = TRUE,
+          se = se.model1,
+          title = "Linear Models Predicting Youtube views",
+          keep.stat = c( "rsq", "n","aic","ser"),
+          omit.table.layout = "n")
+
+```
+From the coeftest command we can see that all the coefficients are statistically significant.
+
+
+The coefficients for rate is 0.467. That means a point increase in rate increases exp(1)*.467 = 1.269 views. At the same time the difference between the Q1 and Q3 is only 1.6 and also rate can only vary from 1-5.Thus even though rate is statistically significant, rate is not practically significant.
+
+But for length every 100 seconds increase in length increases views by 100 * .105 = 10.5. A change in 100 seconds of video length is very likely given this context. So length is statistically and practically significant. 
+

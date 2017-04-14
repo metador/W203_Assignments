@@ -24,12 +24,14 @@ library(stargazer)
 ```{r}
 hist(youtb_data$views)
 plot(sort(youtb_data$views) )
-## From the plots we can see that the views are large variations in data. Also they have some outliers.
+## From the plots we can see that the views are large variations in data.
+##Also they have some outliers.
 
-hist(log(youtb_data$views),breaks=50)
+## We will be take the log of views and log of length for this model
+## Let us look at the histogram of log(view), log(length) and rate 
+hist(log(youtb_data$views),breaks=50) 
 hist(log(youtb_data$length),breaks=50)
 hist(youtb_data$rate)
-
 ```
 
 1. Fit a linear model predicting the number of views (views), from the length of a video (length) and its average user rating (rate).
@@ -40,29 +42,33 @@ summary(model1)
 par(mfrow=c(2,2))
 plot(model1)
 
-## Looking at the Residuals vs Leverage plots we can see that even though there are many outliers they are not influential.
+## Looking at the Residuals vs Leverage plots we can see that even though
+##there are many outliers they are not influential.
 ```
 
 
 2. Using diagnostic plots, background knowledge, and statistical tests, assess all 6 assumptions of the CLM.  When an assumption is violated, state what response you will take.
 ```{r}
 ## ASSUMPTION 1:Linear population model  
-## We can see that the plot is linear in the coefficents due to its desgin.
+## We can see that the plot is linear in the coefficents due to 
+##its desgin.
 
 ##ASSUMPTION 2: Random Sampling
-## Since the data is as is from the source(Youtube), we are safe to assume random sampling
+## Since the data is as is from the source(Youtube), we are safe 
+##to assume random sampling
 
 ##Assupmtion 3:No perfect multicollinearity
-##We will be using Vif as well as vcovHC to see if there are any variables with mutlicollinearity
+##We will be using Vif as well as vcovHC to see if there are 
+#any variables with mutlicollinearity
 vif(model1)
 ```
 
-We dont see any variables with vif value more that 4
+We don't see any variables with vif value more that 4
 ```{r}
 ## We us also can check the variance-covariance matrix 
 vcovHC(model1)
 ```
-We dont see any co-variance more that .75
+We don't see any co-variance more that .75
 
 
 ## AssumptionZero-conditional mean
@@ -71,16 +77,17 @@ plot(model1,which = 1)
 mean(model1$residuals)
 ```
 
-We can see that the line is almost straight and around zero. Also the mean of the residuals is very close to zero.
+We can see that the line is almost straight and around zero. Also the mean of the residuals is very close to zero. So we can satisfy the zero conditional mean assumption.
 
 ```{r}
-## using the the scale-location plot and Breusch-Pagan test we will be testing for Homoskedasticity
+## using the the scale-location plot and Breusch-Pagan test we
+## will be testing for Homoskedasticity
 plot(model1,which = 3)
 bptest(model1)
 ```
-From the scale-location plot is looks like the variance is less in the lower values  and increase for higer values.
+From the scale-location plot is looks like the variance is less in the lower values  and increase for higher values.
 Also, the p-value from Breusch-Pagan test is below 0.05 so we reject the null hypothesis, so the data is heteroskedasitic. 
-Going forward we will be using heterosdasitic robust co-effiecents 
+Going forward we will be using heteroskedasitic robust coefficients 
 
 ```{r}
 ## Lets do check  for normaility of the residuals
@@ -89,8 +96,8 @@ hist(model1$residuals,breaks=50)
 plot(model1,which = 2)
 ```
 the plots looks quite normal, but the qq-plot looks little off at the edges.
-Let us try the shapiro wik test
-Since shaprio test can only take 5000 record we will be running the test 1000 times with different samples of the data(sets of 5000) and looking at the mean p-value. 
+Let us try the Shapiro wik test
+Since Shapiro test can only take 5000 record we will be running the test 1000 times with different samples of the data(sets of 5000) and looking at the mean p-value. 
 ```{r}
 ## Let us test it using the Shapiro-Wilk
 
@@ -113,7 +120,7 @@ But the sample size is huge and so we can apply CLT which implies that OLS coeff
 
 3. Generate a printout of your model coefficients, complete with standard errors that are valid given your diagnostics.  Comment on both the practical and statistical significance of your coefficients
 
-.
+
 ```{r}
 (coeftest(model1, vcov = vcovHC))
 
@@ -127,7 +134,10 @@ stargazer(model1, type = "text", report = "vc",
           omit.table.layout = "n")
 
 ```
-The coefficients for rate is 0.467. That means a point increase in rate increases exp(1)*.467 = 1.269 views. At the same time the difference between the Q1 and Q3 is only 1.6 and also rate can only vary from 1-5.Thus even though rate is satistically significant, rate is not pratically significant.
+From the coeftest command we can see that all the coefficients are statistically significant.
 
-But for lenght every 100 seconds increase in lenght increases views by 100 * .105 = 10.5. A change in 100 seconds of video lenght is very likely given this context. So length is statistically and pratically significant. 
+
+The coefficients for rate is 0.467. That means a point increase in rate increases exp(1)*.467 = 1.269 views. At the same time the difference between the Q1 and Q3 is only 1.6 and also rate can only vary from 1-5.Thus even though rate is statistically significant, rate is not practically significant.
+
+But for length every 100 seconds increase in length increases views by 100 * .105 = 10.5. A change in 100 seconds of video length is very likely given this context. So length is statistically and practically significant. 
 

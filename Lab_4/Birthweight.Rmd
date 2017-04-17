@@ -19,6 +19,7 @@ Variable descriptions are provided as follows.
 ```{r}
 load("bwght_w203.RData")
 library(car)
+library(lmtest)
 desc
 head(data)
 ```
@@ -35,19 +36,151 @@ A successful submission will include
 
 ```{r}
 cor(data$bwght,data, use = "complete.obs")
-scatterplotMatrix(data[,1:7],  use = "complete.obs" )
+cor(log(data$bwght),data, use = "complete.obs")
+cor(log(data$bwght),data, use = "complete.obs")
+
+scatterplotMatrix(data[,],  use = "complete.obs" )
 
 ```
 
 ```{r}
 summary(data)
 hist(data$bwght, breaks = 50)
+summary(data$omaps)
+hist(data$omaps)
+table(data$omaps)
 
-par(mfrow=c(6,2))
+
+summary(data$fmaps)
+hist(data$fmaps)
+table(data$fmaps)
+
+summary(data$fmaps + data$omaps)
+hist(data$fmaps + data$omaps)
+table(data$fmaps+ data$omaps)
+
 
 sapply(colnames(data), function(x) hist(data[,x], breaks = 50, xlab = x ), USE.NAMES= FALSE)
-sapply(colnames(data), function(x){ plot(data$bwght~data[,x], breaks = 50, xlab = x ); abline()}, USE.NAMES= FALSE)
 ```
+
+```{r}
+sapply(colnames(data), function(x){ plot(data$omaps~jitter(data[,x],2), xlab = x ); abline(lm(data$omaps~data[,x]))}, USE.NAMES= FALSE)
+```
+
+```{r}
+data = data[complete.cases(data),]
+
+summary(data$omaps)
+summary(data$npvis)
+model1 = lm(data$omaps ~ data$npvis, na.action = na.omit)
+
+summary(model1)
+coeftest(model1, vcov = vcovHC)
+
+pa1r(mfrow=c(2,2))
+plot(model1)
+
+## Assumption 1
+## THe model is linear in coefficients by design
+
+## Assuption 2
+##Since the data is  from National Center for Health Statistics we can say it is a reliable source, satisfying assumption 2
+
+## Assumption 3
+## Call since there is only one term there is no way for co-linearity among variables
+
+## Assumption 4
+## The plot residual vs fit plot is centered around 0 so we can satisfy assumption 4
+
+
+
+## Assumption 5
+## for Homoskedasitic test
+bptest(model1)
+
+## We fail to reject the null hypothesis hence the model has Homoskedasitic
+## We will be using Homoskedasitic roboust coef
+
+## Assumptioin 6
+## Since we have a lot of data point we can assumption asymptotics of OLS co-efficients
+
+```
+
+```{r}
+head(data[data$omaps==0,])
+
+model2 = lm(data$omaps ~ data$npvis + log(data$bwght), na.action = na.omit)
+
+coeftest(model2, vcov. = vcovHC)
+summary(model2)
+
+
+model11 = lm(data$omaps ~ data$npvis + (data$bwght), na.action = na.omit)
+
+coeftest(model11, vcov. = vcovHC)
+summary(model11)
+
+model7 = lm(log(data$omaps) ~ data$npvis + log(data$bwght), na.action = na.omit)
+
+coeftest(model7, vcov. = vcovHC)
+summary(model7)
+
+model8 = lm(log(data$omaps) ~ data$npvis + log(data$bwght) + data$monpre, na.action = na.omit)
+
+coeftest(model8, vcov. = vcovHC)
+summary(model8)
+
+
+waldtest(model8,model2, vcov= vcovHC)
+summary(model1)
+```
+
+
+
+```{r}
+
+summary(data$monpre)
+
+data$monpre = data$monpre+1
+summary(data$monpre)
+
+model3 = lm(data$omaps ~ data$npvis + data$mage + data$meduc + data$monpre + data$fage + data$feduc + data$bwght, na.action = na.omit)
+plot(model3)
+vif(model3)
+
+coeftest(model3, vcov = vcovHC)
+summary(model3)
+
+model4 = lm(data$omaps ~ data$npvis +data$fage+ data$mage + (data$fage - data$mage)^2 +data$meduc +data$monpre + ( data$feduc) + log(data$bwght), na.action = na.omit)
+
+vif(model4)
+coeftest(model4, vcov = vcovHC)
+summary(model4)
+
+model5 = lm(data$omaps ~ data$npvis + data$fage + data$mage +data$meduc +data$monpre + data$feduc + log(data$bwght), na.action = na.omit)
+coeftest(model5, vcov = vcovHC)
+summary(model5)
+
+model9 = lm(data$omaps ~ data$npvis + data$fage + data$mage*data$cigs +data$cigs +data$meduc +data$monpre + data$feduc + log(data$bwght), na.action = na.omit)
+coeftest(model9, vcov = vcovHC)
+summary(model9)
+
+model10 = lm(data$omaps ~ data$npvis + data$mage*data$drink +data$drink  +data$monpre  + log(data$bwght), na.action = na.omit)
+coeftest(model10, vcov = vcovHC)
+summary(model10)
+
+
+data$omaps = data$omaps+1
+
+model6 = lm(log(data$omaps) ~ data$npvis + log(data$fage + data$mage) +data$meduc +data$monpre + data$feduc + log(data$bwght), na.action = na.omit)
+coeftest(model6, vcov = vcovHC)
+summary(model6)
+
+waldtest(model6,model7,vcov = vcovHC )
+
+plot(model6)
+```
+
 
 - What transformations to apply to variables and what new variables should be created.
 

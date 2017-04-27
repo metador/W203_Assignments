@@ -131,7 +131,7 @@ coeftest(model8, vcov. = vcovHC)
 summary(model8)
 
 
-waldtest(model8,model2, vcov= vcovHC)
+?waldtest(model8,model2, vcov= vcovHC)
 summary(model1)
 ```
 

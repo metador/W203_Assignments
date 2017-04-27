@@ -1,0 +1,343 @@
+---
+title: "Lab4"
+author: "Saul Grimaldo"
+date: "4/17/2017"
+output: pdf_document
+---
+
+##################################################################################
+### Notes: Interpretations of Model 2 and 3
+
+Model 2: 
+npvis : All else equal. 1 additional prenatal visit is associated with a .02943 increase in the sum of the APGAR scores (not practically significant)
+
+bwght: All else equal, 1 additional gram in the birthweight leads to an increase of .0005179 in APGAR score. ( practicalyl significant, 1000 grams = .5179 APGAR score higher than 0 lb, 4000 grams = 2.07 higher APGAR score)
+
+Model 3: 
+
+npvis: All else equal, 1 additional prenatal visit is associated with a .023515 increase in the APGAR score (still not practically signficant)
+
+bwght: All else equal, an increase of 1 lb in the birthweight leads to an increase of .0054356 - 2 * .00000075408 * bwght increase in APGAR score. In other words, there is a decreasing marginal return to weight on the APGAR score. And in fact, the correlation between APGAR scores and weight becomes negative at a birthweight of  3604 grams. Both coefficients are practically signficant.
+
+
+
+###################################################################################
+
+Introduction
+
+In this report we try understand whether prenatal care improves health outcomes for newborn infants. We will be using data from National Center for Health Statistics as well as from birth certificates. We will be using the 1-min APGAR score and 5-Mins Apgar score as the measure of health
+
+```{r}
+library(ggplot2)
+library(car)
+library(lmtest)
+library(sandwich)
+load("bwght_w203.RData")
+```
+
+
+Let us examine the variables omaps(i.e 1 min APGAR score) and fmaps(i.e. 5 mins APGAR score) since they measure the health of the newborn
+
+```{r}
+
+summary(data$omaps)
+hist(data$omaps)
+table(data$omaps)
+
+summary(data$fmaps)
+hist(data$fmaps)
+table(data$fmaps)
+
+```
+
+We see that there is a  high concentration of data points between 8 and 9 in omaps.
+Similarity we have a large concentation of data points in 9.
+So as to get a better measure of health as well as getting more variation in the dependent variable we will add omaps and fmaps and create a new dependent variable maps_sum.
+
+```{r}
+
+data$maps_sum = data$omaps + data$fmaps
+```
+
+Let us examine the npvis variable
+
+```{r}
+summary(data$npvis)
+hist(data$npvis ,breaks = 50)
+```
+
+We see that the data has a negative skew and also has few outliers, at the same time it has zero values.It has 68 NA( which we will exclude from the model) 
+
+Let us try to model if prenatal visits really improves health of a new born baby.
+
+
+```{r}
+model1 = lm(data$maps_sum ~ data$npvis, na.action = na.omit)
+summary(model1)
+```
+
+The estimated model is as follows:
+
+$maps_sum = 15.29 + 0.036838 * npvis + 0.0005179*bwght$
+
+I will now check our model against the Gauss-Markov assumptions
+
+### CLM Assumption #1: Linear in the parameters
+
+Assumption: The model in the population can be written as $y=\beta0 + \beta_1(x1) + \beta_2(x2) + . . . .. + \beta_k(x_k) + u$
+where $\beta_0, \beta_1, ., \beta_k$ are the unknown parameters (constants) of interest and u is an unobserved random error or disturbance term.
+
+We have no non-linear coefficients in the model.
+This is the base assumption as we fit our data to a linear model.
+
+### CLM Assumption #2: Random Sampling
+
+Assumption: We have a random sample of n observations,following the population model in Assumption MLR.1.6
+
+Since we do not know the data is from National Center for Health Statistics but we dont   how this data was sampled, there is the possibility that it might be from a state/region/county which has a large poplution of one ethnecity so there are some non-random factors. 
+
+But for the purposes of this report we can assume random sampling
+
+We will be using the same conditions stated above for all the models we create.
+Hence assumption 1: Linear in the parameters and Assumption 2: Random Sampling will be constant for all the models 
+
+### CLM Assumption #3: No perfect collinearity
+Assumption: In the sample (and therefore in the population), none of the independent variables is constant, and there are no exact linear relationships among the independent variables.
+
+Since there is only one independent variable (i.e. npvis) we there is no chance of collinearity between independent variables
+
+### CLM Assumption #4: Zero conditional mean
+Assumption: The error u has an expected value of zero given any values of the independent variables. In other words, $E(u | x_1, x_2, . . . , x_k) = 0$.
+
+```{r}
+plot(model1,which = 1)
+```
+In the residual vs fitted plot we see that red smoothing curve to be around zero, but then around the ends it drops a bit, So we cannot assume zero conditional mean
+
+###Assumption 4'. Exogeneity
+
+With a sample size of 1832, the Central Limit Theorem is applicable and so we can rely on OLS asymptotics to respond to the violation of the zero conditional mean assumption. Since our model is associative, we're interested only in knowing that our model is consistent. Thus, because of OLS asymptotics combined with the Central Limit Theorem, we are able to assume exogeneity.
+
+###Assumption 5. Homoskedasticity
+Assumption: The error u has the same variance given any values of the explanatory variables. In other words,$Var(u | x1, ., xk) = \sigma^2.$
+
+To check Homoskedasticity we check the residual vs fitted plot above  as well as the scale location plot below
+```{r}
+par(mfrow=c(1,2))
+plot(model1,which = 3)
+```
+ Looking at the plots we can see that the variation is not contant across fitted values,(the red smoothing curve is not constant in the scale location plot and the variance in fitted values are not constant in the residual vs fitted plot.
+
+
+We now look at whether our model is homoskedastic by running a Breush-Pagan test. Under the Breush-Pagan test, our null hypothesis is that the errors in the model are homoskedastic and our alternative hypothesis is heteroskedastic.
+
+```{r}
+bptest(model1)
+```
+
+With a p value of less than 0.05, we reject the null hypothesis that the model is homoskedastic. As such we'll need to rely on heteroskedastic robust errors when checking for the significance of our coefficients.
+
+###Assumption 6. Normally distributed errors
+
+Finally, we now check for normally distributed errors.
+
+```{r}
+plot(model1, which = 2)
+```
+
+According to our QQ plot, there is evidence that the errors are, in fact, not normally distributed. However, since our sample is large, we're able to rely on the Central Limit Theorem and thus do not need to fulfill this assumption.
+
+```{r}
+coeftest(model1,vcov = vcovHC)
+
+```
+The estimated model is as follows
+$maps_sum = 15.29 + 0.03683 * npvis$
+
+looking at the model we see that All else being equal 1 additional prenatal visit is associated with a .02943 increase in the sum of the APGAR scores which is not practically significant
+
+
+Lets us now add more independent variables to the model
+
+##Birthweight
+We now attempt to look at a new variable, bwght, which is the weight of the baby at birth in grams. 
+
+```{r}
+hist(data$bwght, breaks = 10)
+```
+
+The variable has a small left skew, but the shape of the histogram looks fairly normally distributed.
+```{r}
+qqnorm(data$bwght); qqline(data$bwght, col = 2)
+```
+
+The qqplot further confirms that what we saw in the histogram. The data mainly conforms to the normal distribution except for the initial datapoints, so it seems to follow a normal distribution. We'll likely not need any log transformation on this variable.
+
+
+Next we continue by graphically looking at the relationship between the weight of the baby at birth with the sum of the APGAR scores.
+
+```{r}
+ggplot(data, aes(x = bwght, y =maps_sum)) + geom_point() + stat_smooth(method = "loess")
+```
+
+We see an interesting relationship. Weight seems to show a non-constant correlation.
+The next two models we explore will dig deeper into this relationship. 
+
+Leveraging some of what we just learned, I will add the birth weight into our model which we'll refer to as model 2.
+
+Model 2 is thus estimating:
+
+$maps_sum = \beta_0 + \beta_1*npvis + \beta_2*bwght + u$
+
+```{r}
+model1 = lm(maps_sum ~ npvis, data = data)
+model2 = lm(maps_sum ~ npvis + bwght, data = data)
+model2
+coeftest(model2, vcov = vcovHC)
+```
+
+The estimated model is as follows:
+
+$maps_sum = 15.29 + 0.02935 * npvis + 0.0005179*bwght$
+
+I will now check our model against the Gauss-Markov assumptions before I continue.
+
+As discussed before, assumption 1 -- linearity in parameters -- and assumption 2 -- random sampling -- hold.
+
+###Assumption 3: No perfect multicolinearity
+
+To check for multicollinearity, it is enough to look at the variance inflation factors for the two variables.
+
+```{r}
+vif(model2)
+```
+
+Neither variable has a large variance inflation factor, so there is no evidence of multicolinearity.
+
+###Assumption 4. Zero Conditional Mean
+
+To check for zero conditional mean, I look at the smoothing line in the predicted vs residuals plot.
+
+```{r}
+plot(model2, which = 1)
+```
+
+In an ideal situation, we'd like to see the smoothing curve going through 0. The smoothing line however has some curvature to it, so it seems that our model violates this assumption. 
+
+###Assumption 4'. Exogeneity
+
+With a sample size of 1832, the Central Limit Theorem is applicable and so we can rely on OLS asymptotics to respond to the violation of the zero conditional mean assumption. Since our model is associative, we're interested only in knowing that our model is consistent. Thus, because of OLS asymptotics combined with the Central Limit Theorem, we are able to assume exogeneity.
+
+
+###Assumption 5. Homoskedasticity
+
+We now look at whether our model is homoskedastic by running a Breush-Pagan test. Under the Breush-Pagan test, our null hypothesis is that the errors in the model are homoskedastic and our alternative hypothesis is heteroskedastic.
+
+```{r}
+bptest(model2)
+```
+
+With a p value of less than 0.01, we reject the null hypothesis that the model is homoskedastic. As such we'll need to rely on heteroskedastic robust errors when checking for the significance of our coefficients.
+
+###Assumption 6. Normally distributed errors
+
+Finally, we now check for normally distributed errors.
+
+```{r}
+plot(model2, which = 2)
+```
+
+According to our QQ plot, there is evidence that the errors are, in fact, not normally distributed. However, since our sample is large, we're able to rely on the Central Limit Theorem and thus do not need to fulfill this assumption.
+
+###Comparing the two models 
+
+The two metrics I will look at to validate the two models are the Akaike Information Criteria and the Adjusted R-Squared.
+
+Model 1:
+```{r}
+AIC(model1)
+summary(model1)$adj.r.squared
+```
+
+Model 2:
+```{r}
+AIC(model2)
+summary(model2)$adj.r.squared
+
+```
+
+Both the Akaike Information Criteria and the Adjusted R-Squared show evidence that the second model is an improvement over the first model.
+
+However, as we noted in our exploratory data analysis at the beginning of this section, it seems that the relationship is not constant. So I will now explore an additional model:
+
+The new model attempts to estimate the following:
+
+$maps_sum = \beta_0 + \beta_1*npvis + \beta_2*bwght + \beta_3*bwght^2 + u$
+
+```{r}
+data$bwghtsq = data$bwght**2
+model3 = lm(maps_sum ~ npvis + bwght + bwghtsq, data = data)
+model3
+```
+
+Like before, we already know that assumption 1 and 2 hold based on the discussion in the introduction.
+
+###Assumption 3: No perfect multicolinearity
+
+Next, I check for multicollinearity using the same technique as before, the variance inflation factor.
+
+```{r}
+vif(model3)
+```
+
+In this model, we see that both the birthweight and the squared birthweight have very large variance inflation factors, suggesting that there is a strong multicolinearity in this model. Still, this model does not violate the perfect multicollinearity assumption, so we will proceed knowing that the variance of both birthweight and squared birthweight will experience a large amount of inflation.
+
+###Assumption 4: Zero Conditional Mean
+
+I, again, rely on the fitted values vs residuals plot to check for the zero conditional mean assumption.
+
+```{r}
+plot(model3, which = 1)
+```
+
+Because the smoothing curve is not a flat line that goes through zero, there is evidence that the zero conditional mean condition is violated.
+
+###Assumption 4': Exogeneity
+
+Like before, we can rely on a combination of the central limit theorem, OLS asymptotics and the fact that our model is associative, not causal to assume that exogeneity will hold within our sample due to the large sample size of 1832.
+
+###Assumption 5: Homoskedasticity
+
+Again, we rely on the Breush Pagan test to check for homoskedasticity. THe null hypothesis, again, is that the errors are homoskedastic, and the alternative hypothesis is that they are heteroskedastic.
+
+```{r}
+bptest(model3)
+```
+
+With a p value of less than 0.01, we reject the null hypothesis that the model is homoskedastic. As such we'll need to rely on heteroskedastic robust errors when checking for the significance of our coefficients.
+
+#Assumption 6. Normally distributed errors
+
+Finally, we now check for normally distributed errors.
+
+```{r}
+plot(model3, which = 2)
+```
+
+According to our QQ plot, there is evidence that the errors are, in fact, not normally distributed. However, since our sample is large, we're able to rely on the Central Limit Theorem and thus do not need to fulfill this assumption.
+
+```{r}
+AIC(model3)
+summary(model3)$adj.r.squared
+```
+
+Both the AIC and the adjusted r squared show evidence that the model is improved with the additional term.
+
+```{r}
+coeftest(model3,vcov = vcovHC)
+```
+
+Despite the high variance inflation in birthweight and birthweight squared, all the variables are statistically significant.
+
+
+

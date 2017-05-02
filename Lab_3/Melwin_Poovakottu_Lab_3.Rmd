@@ -80,6 +80,7 @@ summary(S$pid_x)
 ## we see there are 24 missing values. let us remove them since they so not help our analysis
 ## Also Since we have to see if age difference between democratic and republican votes we 
 #can set aside the independent voters from the analysis
+
 S_new  = subset(S,!(pid_x %in% c("4. Independent")))
 S_new= S_new[S_new$pid_x!="-2. Missing",]
 
@@ -155,36 +156,65 @@ t.test(S_new[S_new$party=='Republican',]$dem_age_r_x ,alternative = "greater" , 
 4. Were Republican voters more likely to shift their political preferences right or left (more conservative or more liberal), compared to Democratic voters during the 2012 election?
 
 ```{r}
-## Let us examine the republican before and after the election 
-summary(S_new[S_new$party=='Republican',]$libcpre_self_sc)
-summary(S_new[S_new$party=='Republican',]$libcpo_self_sc ,breaks =16)
+S_new  = subset(S,!(pid_x %in% c("4. Independent")))
+S_new= S_new[S_new$pid_x!="-2. Missing",]
+## Let us remove all the non-answers from the data
+S_new = subset(S_new,libcpre_self %in% answers)
+S_new = subset(S_new,libcpo_self %in% answers)
+## we will assign a new variable party which identifies whether the participaint is
+## democratic or republican 
+S_new$party = factor(ifelse(S_new$pid_x %in% vote_class_demo, "Democrat","Republican"))
+## Let us reduce the nubmer of factors and created new varaibles libcpre_self_sc and 
+## libcpo_self_sc which enumerates them
+S_new$libcpo_self =factor(S_new$libcpo_self)
+S_new$libcpre_self = factor(S_new$libcpre_self)
+S_new$libcpre_self_sc = as.numeric(S_new$libcpre_self)
+S_new$libcpo_self_sc = as.numeric(S_new$libcpo_self)
 
+## Let us examine the new variables libcpo_self for repulican vs Democrats
+summary(S_new[S_new$party=='Republican',]$libcpre_self_sc)
+summary(S_new[S_new$party=='Republican',]$libcpo_self_sc )
+hist(S_new[S_new$party=='Republican',]$libcpre_self_sc ,breaks = 13)
+hist(S_new[S_new$party=='Republican',]$libcpo_self_sc,breaks = 16 )
+table(S_new$libcpo_self)
 ## similary for democrats
 
-summary(S_new[S_new$party=='Democrat',]$libcpre_self_sc ,breaks =13)
-summary(S_new[S_new$party=='Democrat',]$libcpo_self_sc ,breaks =16)
+summary(S_new[S_new$party=='Democrat',]$libcpre_self_sc)
+summary(S_new[S_new$party=='Democrat',]$libcpo_self_sc )
 
-## Here we are going to assign non-answers (i.e. Refused, Haven't though about it, etc)
-# to "Moderate; middle of the road"
-S_new$libcpre_self_sc = ifelse(S_new$libcpre_self_sc < 4 , 
-       7, S_new$libcpre_self_sc)
-S_new$libcpo_self_sc = ifelse(S_new$libcpo_self_sc < 4 , 
-       7, S_new$libcpo_self_sc)
+hist(S_new[S_new$party=='Democrat',]$libcpre_self_sc ,breaks = 13)
+hist(S_new[S_new$party=='Democrat',]$libcpo_self_sc ,breaks = 16 )
+nrow(S_new[S_new$party=='Republican',])
+nrow(S_new[S_new$party=='Democrat',])
 
-## Since the libpre_self and libpo_self are ordinal varibles we need to do
-##non-parameteric test.
+
+
+## To measure the shift we create a new variable called shift which
+## is the difference between $libcpre_self and $libcpo_self
+S_new$shift = S_new$libcpre_self_sc-S_new$libcpo_self_sc
+
+summary(S_new$shift)
+hist(S_new$shift, breaks = 12)
+## we see a high concentration in the at 0 and it does not look like a normal plot
+
+## In additoin to that Since the libpre_self and libpo_self are ordinal varible the shift ordinal.
+## Hence we need to do non-parameteric test.
 ##Since we need to check if republician or democrats are more likely to shift we 
-##need to evaulate the difference between libpre_self and lib_po_self for republican 
-# or democrats.Here we will be using a
-##wilcon signed sum rank test indiviudually for republican or democrats. 
-wilcox.test(S_new[S_new$party=='Republican',]$libcpre_self_sc,S_new[S_new$party=='Republican',]$libcpo_self_sc,paired = T)
+##need to evaulate the difference between libcpre_self and libcpo_self for republican
+# vs democrats.Here we will be using a
+##wilcon signed sum rank test for the shift variable between  republican or democrats. 
+##The null hypothesis is that repulicans are as likely as Democrats to shift thier
+## political prefernce 
+## THe Alternate is that either republican or democratic are more likely to shift
+## their prefernce
+wilcox.test(S_new$shift~(S_new$party),paired = F)
 
-wilcox.test(S_new[S_new$party=='Democrat',]$libcpre_self_sc,S_new[S_new$party=='Democrat',]$libcpo_self_sc,paired = T)
-# Here we see that the p values for republican is .003641 whereas the the p-value for 
-#Democrat is 0.723. This means the republicans are more likely to shift right or left
-#than democrats
+## Here we see that the p-value is 0.01096 so we can reject the null hypothesis and
+## that democrat or republicans are more likely to shift thier preference. This is 
+## because two-tailed test do not tell you directional differences
 
-#We can see the same inference by taking the difference of means of libpre_self and libpo_self
+#We can see that taking the difference of means of libpre_self and libpo_self we see 
+# that democrats are more likely to shift there political opinion that Republicans
 (mean(S_new[S_new$party=='Republican',]$libcpre_self_sc )-mean(S_new[S_new$party=='Republican',]$libcpo_self_sc ))
 (mean(S_new[S_new$party=='Democrat',]$libcpre_self_sc )- mean(S_new[S_new$party=='Democrat',]$libcpo_self_sc ))
 ```
@@ -194,8 +224,10 @@ wilcox.test(S_new[S_new$party=='Democrat',]$libcpre_self_sc,S_new[S_new$party=='
 ```{r}
 
 
-## Here we will evalualte if democrats approve the present more than the republcians. 
-##Here we willuse the presapp_job i.e Approve or disapprove President handling job as President
+## Here we will evalualte if democrats approve the present
+##more than the republcians. 
+##Here we willuse the presapp_job i.e Approve or disapprove
+##President handling job as President
 
 S_new$pre_app_dis = as.numeric(S_new$presapp_job)
 
@@ -203,15 +235,24 @@ table(S_new$presapp_job,as.numeric(S_new$presapp_job))
 
 ## we will only consider data points which are approve or disapprove
 Sd = S_new
-## Since we are intrested in evaluating if the democrates approve/disapprove more or less the 
+hist(Sd[Sd$party=='Republican',]$pre_app_dis)
+hist(Sd[Sd$party=='Democrat',]$pre_app_dis)
+## Here we see a clear separation that repulican disapprove
+##Obama(4) and Democratic approve Obama(3) where are Demo
+## Since we are intrested in evaluating if the democrates 
+##approve/disapprove more or less the 
 ## same as the republicans.
-## our null hypothesis is that  approval for the president is same for republicans and democrats.
+## our null hypothesis is that  approval for the president is same 
+##for republicans and democrats.
 ## Since the presapp_job is an ordinal varaible we will have have to use non-parameteric test.
-## Also we are just interest of the means are different, so we will run a independent wilcoxcin rank sum test. 
+## Also we are just interest of the means are different, so we will 
+##run a independent wilcoxcin rank sum test. 
 wilcox.test(Sd[Sd$party=='Republican',]$pre_app_dis,Sd[Sd$party=='Democrat',]$pre_app_dis,paired = F)
-## We can see that the p-value is very small. So we can reject the null hypothesis that the 
+## We can see that the p-value is very small. So we can reject 
+##the null hypothesis that the 
 ##republicans approve/disapprove the president same as the democrates
-## we can take the means to get a estimate to see if democrates approve more than the republicans
+## we can take the means to get a estimate to see if democrates approve
+##more than the republicans
 mean(Sd[Sd$party=='Republican',]$pre_app_dis)
 mean(Sd[Sd$party=='Democrat',]$pre_app_dis)
 
